@@ -70,7 +70,7 @@ class Email
         ];
     }
 
-    public function from(): string
+    public function from(): array
     {
         return $this->from;
     }
@@ -85,28 +85,52 @@ class Email
         return $this->isSent;
     }
 
-    public function replyTo(): string
+    public function replyTo(): array
     {
         return $this->replyTo;
     }
 
-    protected function resolveEmail($email = null, bool $multiple = true)
+    protected function resolveEmail($email = null)
     {
         if ($email === null) {
-            return $multiple === true ? [] : '';
+            return [];
         }
 
         if (is_array($email) === false) {
-            $email = [$email];
+            $email = [$email, null];
         }
 
+        list($address, $name) = $email;
+
+        if (V::email($address) === false) {
+            throw new Exception(sprintf('"%s" is not a valid email address', $address));
+        }
+
+        return $email;
+    }
+
+    protected function resolveEmails($email = null)
+    {
+        if ($email === null) {
+            return [];
+        }
+
+        if (is_array($email) === false) {
+            $email = [
+                [$email, null]
+            ];
+        }
+
+        $emails = [];
+
         foreach ($email as $address) {
-            if (V::email($address) === false) {
-                throw new Exception(sprintf('"%s" is not a valid email address', $address));
+            if ($address !== null) {
+                list($email, $name) = $this->resolveEmail($address);
+                $emails[] = [$email, $name];
             }
         }
 
-        return $multiple === true ? $email : $email[0];
+        return $emails;
     }
 
     public function send(): bool
@@ -132,25 +156,25 @@ class Email
 
     protected function setBcc($bcc = null)
     {
-        $this->bcc = $this->resolveEmail($bcc);
+        $this->bcc = $this->resolveEmails($bcc);
         return $this;
     }
 
     protected function setCc($cc = null)
     {
-        $this->cc = $this->resolveEmail($cc);
+        $this->cc = $this->resolveEmails($cc);
         return $this;
     }
 
-    protected function setFrom(string $from)
+    protected function setFrom($from)
     {
-        $this->from = $this->resolveEmail($from, false);
+        $this->from = $this->resolveEmail($from);
         return $this;
     }
 
-    protected function setReplyTo(string $replyTo = null)
+    protected function setReplyTo($replyTo = null)
     {
-        $this->replyTo = $this->resolveEmail($replyTo, false);
+        $this->replyTo = $this->resolveEmail($replyTo);
         return $this;
     }
 
@@ -162,7 +186,7 @@ class Email
 
     protected function setTo($to)
     {
-        $this->to = $this->resolveEmail($to);
+        $this->to = $this->resolveEmails($to);
         return $this;
     }
 

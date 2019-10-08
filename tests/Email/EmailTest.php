@@ -11,21 +11,69 @@ class EmailTest extends TestCase
 
     public function testProperties()
     {
+        $from = 'no-reply@supercompany.com';
+        $to = 'someone@gmail.com';
+        $replyTo = 'no-reply@supercompany.com';
+        $subject = 'Thank you for your contact request';
+        $body = 'We will never reply';
+        $cc = [
+            'marketing@supercompany.com',
+            'sales@supercompany.com'
+        ];
+
+        $fromExpected = [$from, null];
+        $toExpected = [
+            [$to, null]
+        ];
+        $replyToExpected = [$replyTo, null];
+        $ccExpected = [
+            ['marketing@supercompany.com', null],
+            ['sales@supercompany.com', null]
+        ];
+
         $email = $this->_email([
-            'from' => $form = 'no-reply@supercompany.com',
-            'to' => $to = 'someone@gmail.com',
-            'replyTo' => $replyTo = 'no-reply@supercompany.com',
-            'subject' => $subject = 'Thank you for your contact request',
-            'body' => $body = 'We will never reply',
-            'cc' => $cc = [
-                'marketing@supercompany.com',
-                'sales@supercompany.com'
-            ],
+            'from' => $from,
+            'to' => $to,
+            'replyTo' => $replyTo,
+            'subject' => $subject,
+            'body' => $body,
+            'cc' => $cc,
             'bcc' => $cc
         ]);
 
+        $this->assertEquals($fromExpected, $email->from());
+        $this->assertEquals($toExpected, $email->to());
+        $this->assertEquals($replyToExpected, $email->replyTo());
+        $this->assertEquals($subject, $email->subject());
+        $this->assertEquals($ccExpected, $email->cc());
+        $this->assertEquals($ccExpected, $email->bcc());
+
+        $this->assertInstanceOf(Body::class, $email->body());
+        $this->assertEquals($body, $email->body()->text());
+        $this->assertEquals(null, $email->body()->html());
+
+        $this->assertEquals(['type' => 'mail'], $email->transport());
+    }
+
+    public function testNamedProperties()
+    {
+        $email = $this->_email([
+            'from' => $form = ['no-reply@supercompany.com', 'Super Company'],
+            'replyTo' => $replyTo = ['no-reply@supercompany.com', 'Super Company'],
+            'to' => $to = [
+                ['someone@gmail.com', 'Someone']
+            ],
+            'cc' => $cc = [
+                ['marketing@supercompany.com', 'Marketing'],
+                ['sales@supercompany.com', 'Sales']
+            ],
+            'bcc' => $cc,
+            'subject' => $subject = 'Thank you for your contact request',
+            'body' => $body = 'We will never reply',
+        ]);
+
         $this->assertEquals($form, $email->from());
-        $this->assertEquals([$to], $email->to());
+        $this->assertEquals($to, $email->to());
         $this->assertEquals($replyTo, $email->replyTo());
         $this->assertEquals($subject, $email->subject());
         $this->assertEquals($cc, $email->cc());
@@ -56,7 +104,7 @@ class EmailTest extends TestCase
             'bcc' => null,
         ]);
 
-        $this->assertEquals('', $email->replyTo());
+        $this->assertEquals([], $email->replyTo());
         $this->assertEquals([], $email->cc());
         $this->assertEquals([], $email->bcc());
     }
