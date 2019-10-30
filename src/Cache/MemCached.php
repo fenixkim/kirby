@@ -2,6 +2,8 @@
 
 namespace Kirby\Cache;
 
+use Kirby\Toolkit\Str;
+
 /**
  * Memcached Driver
  *
@@ -86,12 +88,38 @@ class MemCached extends Cache
     /**
      * Flushes the entire cache and returns
      * whether the operation was successful;
-     * WARNING: Memcached only supports flushing the whole cache at once!
      *
-     * @return bool
+     * @return boolean
      */
     public function flush(): bool
     {
-        return $this->connection->flush();
+        if (empty($this->options['prefix']) === false) {
+
+            $prefix = $this->options['prefix'];
+            $keys = [];
+
+            foreach ($this->connection->getAllKeys() as $index => $key) {
+                if (Str::startsWith($key, $prefix)) {
+                    $keys[] = $key;
+                }
+            }
+
+            if (count($keys)) {
+
+                $result = $this->connection->deleteMulti($keys);
+
+                // Support bool[] ouputs for older memcached versions
+                if (is_array($result)) {
+                    return count(array_filter(array_values($result))) === count($keys);
+                }
+
+                return $result;
+            }
+
+            return false;
+
+        } else {
+            return $this->connection->flush();
+        }
     }
 }
